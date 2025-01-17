@@ -24,7 +24,7 @@ func NewInteraction(userID, endpoint string, statusCode int, honeytoken bool, ip
 	}
 }
 
-// ToMap converts the Interaction struct to a map for easier handling (e.g., for Neo4j insertion)
+// ToMap converts the Interaction struct to a map for easier handling
 func (i Interaction) ToMap() map[string]interface{} {
 	return map[string]interface{}{
 		"user_id":              i.UserID,
