@@ -25,14 +25,27 @@ func NewInteractionHandler(neo4jService *services.Neo4jService, logger *utils.Lo
 
 // LogInteraction handles requests to log user interactions
 func (h *InteractionHandler) LogInteraction(w http.ResponseWriter, r *http.Request) {
-	var interaction models.Interaction
 
-	if err := json.NewDecoder(r.Body).Decode(&interaction); err != nil {
-		h.Logger.Error("Invalid request body: " + err.Error())
+	type RequestBody struct {
+		UserID string `json:"user_id"`
+	}
+
+	var requestBody RequestBody
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		h.Logger.Error("Failed to decode request body: " + err.Error())
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	interaction := models.NewInteraction(
+		requestBody.UserID,
+		"/api/valid-endpoint",
+		http.StatusOK,
+		false,
+		r.RemoteAddr,
+	)
+
+	// Save the interaction to Neo4j
 	if err := h.Neo4jService.SaveInteraction(interaction); err != nil {
 		h.Logger.Error("Failed to save interaction: " + err.Error())
 		http.Error(w, "Failed to save interaction", http.StatusInternalServerError)

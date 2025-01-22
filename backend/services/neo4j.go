@@ -4,6 +4,7 @@ import (
 	"backend/models"
 	"backend/utils"
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -29,7 +30,6 @@ func NewNeo4jService(uri, username, password string, logger *utils.Logger) *Neo4
 // SaveInteraction saves a user interaction to the database
 func (s *Neo4jService) SaveInteraction(interaction models.Interaction) error {
 	ctx := context.Background()
-	defer s.Driver.Close(ctx)
 
 	session := s.Driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
@@ -59,16 +59,32 @@ func (s *Neo4jService) SaveInteraction(interaction models.Interaction) error {
 	return nil
 }
 
-// RunQuery runs a custom query on the database
+// RunQuery executes a Cypher query on the Neo4j database
 func (s *Neo4jService) RunQuery(query string, params map[string]interface{}) ([]neo4j.Record, error) {
 	ctx := context.Background()
 	session := s.Driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
 	s.Logger.Debug("Running query: "+query, true)
-
 	result, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		return tx.Run(ctx, query, params)
+		res, err := tx.Run(ctx, query, params)
+		if err != nil {
+			return nil, err
+		}
+
+		var records []neo4j.Record
+		for res.Next(ctx) {
+			recPtr := res.Record()
+			if recPtr != nil {
+				records = append(records, *recPtr)
+			}
+		}
+
+		if err := res.Err(); err != nil {
+			return nil, err
+		}
+
+		return records, nil
 	})
 
 	if err != nil {
@@ -76,6 +92,21 @@ func (s *Neo4jService) RunQuery(query string, params map[string]interface{}) ([]
 		return nil, err
 	}
 
+	records, ok := result.([]neo4j.Record)
+	if !ok {
+		return nil, fmt.Errorf("expected []neo4j.Record but got %T", result)
+	}
+
 	s.Logger.Info("Query executed successfully")
-	return result.([]neo4j.Record), nil
+	return records, nil
+}
+
+// Close closes the Neo4j driver
+func (s *Neo4jService) CloseDriver() {
+	ctx := context.Background()
+	if err := s.Driver.Close(ctx); err != nil {
+		s.Logger.Error("Failed to close Neo4j driver: " + err.Error())
+		log.Fatalf("Failed to close Neo4j driver: %v", err)
+	}
+	s.Logger.Info("Neo4j driver closed successfully")
 }

@@ -26,7 +26,6 @@ func NewUserAnalysisService(neo4jService *Neo4jService, aiService *AIIntegration
 func (s *UserAnalysisService) AnalyzeUser(userID string) (map[string]interface{}, error) {
 	s.Logger.Info("Starting user analysis for user_id: " + userID)
 
-	// Updated Cypher query to analyze interactions via relationships
 	query := `
 	MATCH (u:User {user_id: $user_id})-[:HAS_INTERACTION]->(i:Interaction)
 	RETURN
@@ -37,14 +36,12 @@ func (s *UserAnalysisService) AnalyzeUser(userID string) (map[string]interface{}
 	params := map[string]interface{}{"user_id": userID}
 	s.Logger.Debug("Executing Cypher query for user analysis", true)
 
-	// Run the query
 	records, err := s.Neo4jService.RunQuery(query, params)
 	if err != nil {
 		s.Logger.Error("Failed to run Cypher query: " + err.Error())
 		return nil, fmt.Errorf("failed to analyze user: %v", err)
 	}
 
-	// Extract features from the query results
 	if len(records) == 0 {
 		s.Logger.Info("No interactions found for user_id: " + userID)
 		return nil, fmt.Errorf("no interactions found for user_id: %s", userID)
@@ -62,7 +59,6 @@ func (s *UserAnalysisService) AnalyzeUser(userID string) (map[string]interface{}
 	}
 	s.Logger.Info(fmt.Sprintf("Extracted features for user_id %s: %+v", userID, features))
 
-	// Predict maliciousness using the AI model
 	s.Logger.Info("Sending features to AI model for prediction")
 	prediction, err := s.AIIntegrationService.PredictMaliciousness(features)
 	if err != nil {

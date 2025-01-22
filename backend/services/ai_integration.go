@@ -27,14 +27,12 @@ func NewAIIntegrationService(endpoint string, logger *utils.Logger) *AIIntegrati
 func (s *AIIntegrationService) PredictMaliciousness(data map[string]interface{}) (map[string]interface{}, error) {
 	s.Logger.Info("Preparing to send prediction request to AI model")
 
-	// Serialize data
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		s.Logger.Error("Failed to serialize data: " + err.Error())
 		return nil, fmt.Errorf("failed to serialize data: %v", err)
 	}
 
-	// Send HTTP POST request to AI model
 	s.Logger.Debug("Sending data to AI model: "+s.ModelEndpoint+"/predict", true)
 	resp, err := http.Post(s.ModelEndpoint+"/predict", "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -43,7 +41,6 @@ func (s *AIIntegrationService) PredictMaliciousness(data map[string]interface{})
 	}
 	defer resp.Body.Close()
 
-	// Decode response
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		s.Logger.Error("Failed to decode AI model response: " + err.Error())

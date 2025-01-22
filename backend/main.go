@@ -11,7 +11,7 @@ import (
 func main() {
 	// Initialize services
 	logger := utils.NewLogger()
-	neo4jService := services.NewNeo4jService("tobefilledin", "tobefilledin", "tobefilledin", logger)
+	neo4jService := services.NewNeo4jService("bolt://localhost:7687", "neo4j", "Password", logger)
 
 	// Initialize handlers
 	interactionHandler := handlers.NewInteractionHandler(neo4jService, logger)
