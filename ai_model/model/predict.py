@@ -1,0 +1,1 @@
+# This file will train and build the NN model to predict the maliciousness score of a given user
