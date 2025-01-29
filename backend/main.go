@@ -24,6 +24,7 @@ func main() {
 	http.HandleFunc("/api/log-interaction", interactionHandler.LogInteraction)
 	http.HandleFunc("/api/detect-honeytoken", honeytokenHandler.DetectHoneytoken)
 	http.HandleFunc("/api/analyze-user", userAnalysisHandler.AnalyzeUser)
+	http.HandleFunc("/api/associate-users", interactionHandler.LogAssociation)
 
 	// Start the server
 	logger.Info("Starting server on port 8080...")

@@ -28,10 +28,12 @@ func (s *UserAnalysisService) AnalyzeUser(userID string) (map[string]interface{}
 
 	query := `
 	MATCH (u:User {user_id: $user_id})-[:HAS_INTERACTION]->(i:Interaction)
+	MATCH (u)-[:ASSOCIATED_WITH]->(p:User)
 	RETURN
 		COUNT(i) AS total_access_count,
 		SUM(CASE WHEN i.honeytoken_triggered THEN 1 ELSE 0 END) AS honeytoken_access_count,
-		COUNT(DISTINCT i.ip_address) AS shared_ip_count
+		COUNT(DISTINCT i.ip_address) AS shared_ip_count,
+		AVG(p.malicious_score) AS avg_associated_malicious_score
 	`
 	params := map[string]interface{}{"user_id": userID}
 	s.Logger.Debug("Executing Cypher query for user analysis", true)
@@ -51,11 +53,13 @@ func (s *UserAnalysisService) AnalyzeUser(userID string) (map[string]interface{}
 	totalAccessCount, _ := record.Get("total_access_count")
 	honeytokenAccessCount, _ := record.Get("honeytoken_access_count")
 	sharedIPCount, _ := record.Get("shared_ip_count")
+	avgAssociatedMaliciousScore, _ := record.Get("avg_associated_malicious_score")
 
 	features := map[string]interface{}{
-		"total_access_count":      totalAccessCount.(int64),
-		"honeytoken_access_count": honeytokenAccessCount.(int64),
-		"shared_ip_count":         sharedIPCount.(int64),
+		"total_access_count":             totalAccessCount.(int64),
+		"honeytoken_access_count":        honeytokenAccessCount.(int64),
+		"shared_ip_count":                sharedIPCount.(int64),
+		"avg_associated_malicious_score": avgAssociatedMaliciousScore.(float64),
 	}
 	s.Logger.Info(fmt.Sprintf("Extracted features for user_id %s: %+v", userID, features))
 
