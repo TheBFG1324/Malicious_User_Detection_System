@@ -1,19 +1,123 @@
 # Malicious User Detection System
 
 ## Overview
-The Malicious User Detection System is a tool designed to track user interactions, identify fake or anomalous behaviors, and predict malicious users using AI models integrated with Neo4j. This project combines graph-based insights with machine learning to enhance system security and detect threats proactively.
+The **Malicious User Detection System** is a security tool designed to track user interactions, detect fake behaviors, and predict malicious users using **AI and Neo4j**.  
+This project **combines graph-based insights and machine learning** to enhance cybersecurity and proactively detect threats.
 
 ## Features
-- **Data Logging:** Tracks user actions, including endpoint accesses and honeytoken triggers.
-- **Graph Database Integration:** Stores and analyzes user interaction data in Neo4j.
-- **AI-Powered Predictions:** Leverages machine learning models to classify users as malicious or non-malicious based on interaction patterns.
-- **Graph-Based Insights:** Detects complex relationships and behaviors using Neo4j's graph queries.
-- **Visualization:** View relationships and malicious patterns in Neo4j Browser.
+- ** Data Logging:** Tracks user activity, endpoint accesses, and honeytoken triggers.
+- ** AI-Powered Predictions:** Uses an MLP model to classify users based on interaction patterns.
+- ** Graph-Based Insights:** Analyzes user relationships and behaviors using **Neo4j graph queries**.
+- ** Real-Time Detection:** Predicts maliciousness scores and updates the risk in **Neo4j**.
+- ** REST API Integration:** Flask-powered API for interaction with AI services, Go backend for interaction logging and Neo4j use.
+- ** Visualization:** Displays relationships and malicious user patterns in **Neo4j Browser**.
 
-## How It Works
-1. **Data Generation:** Synthetic data is created with labeled malicious and non-malicious users.
-2. **AI Training:** A machine learning model is trained using labeled data to predict user behavior.
-3. **Neo4j Storage:** User interactions are logged and stored in Neo4j as nodes and relationships.
-4. **Insights Extraction:** Cypher queries analyze interaction patterns for AI input.
-5. **Prediction:** The trained AI model predicts maliciousness, updating Neo4j with risk scores.
-6. **Action:** The system blocks or flags high-risk users for further action.
+---
+
+## ** How It Works**
+1. ** Data Generation:**  
+   - Synthetic user interaction data is generated with **labeled maliciousness scores** (`0` = More safe, `1` = More malicious).
+   - More honeypot interactions & shared IPs = **higher maliciousness score**.
+  
+2. ** AI Model Training:**  
+   - The system trains an **MLPRegressor** model using the generated data.
+   - Features include: **total access count, honeytoken triggers, shared IP count, avg associated malicious score**.
+  
+3. ** Neo4j Graph Storage:**  
+   - User interactions are **logged in Neo4j** as **nodes** and **relationships**.
+  
+4. ** Graph-Based Analysis:**  
+   - Cypher queries extract **interaction patterns** for AI model input.
+  
+5. ** Real-Time Prediction:**  
+   - The trained AI model predicts maliciousness **for any user**.
+   - Updates the **Neo4j database** with new risk scores.
+  
+6. ** Security Action:**  
+   - Flags or blocks high-risk users based on prediction scores.
+
+---
+
+## ** Neo4j Graph Structure**
+The system represents users and interactions using **graph nodes and relationships**:
+
+### ** Nodes**
+| Node Type | Properties |
+|-----------|-------------|
+| **User**  | `user_id`, `malicious_score` |
+| **Interaction** | `endpoint`, `timestamp`, `response_status_code`, `honeytoken_triggered`, `ip_address` |
+
+### ** Relationships**
+| Relationship | Description |
+|-------------|-------------|
+| **HAS_INTERACTION** | Links a `User` to an `Interaction` |
+| **ASSOCIATED_WITH** | Links two `Users` with a connection |
+
+### ** Cypher Queries**
+#### ** Inserting a User Interaction**
+```cypher
+MERGE (u:User {user_id: $user_id})
+ON CREATE SET u.malicious_score = 0.0
+
+CREATE (i:Interaction {
+    endpoint: $endpoint,
+    timestamp: $timestamp,
+    response_status_code: $response_status_code,
+    honeytoken_triggered: $honeytoken_triggered,
+    ip_address: $ip_address
+})
+CREATE (u)-[:HAS_INTERACTION]->(i)
+```
+
+#### **Associating Two Users**
+```cypher
+  MERGE (u1:User {user_id: $user1})
+			ON CREATE SET u1.malicious_score = 0.0
+			MERGE (u2:User {user_id: $user2})
+			ON CREATE SET u2.malicious_score = 0.0
+			CREATE (u1)-[:ASSOCIATED_WITH]->(u2)
+			CREATE (u2)-[:ASSOCIATED_WITH]->(u1)
+```
+   
+#### ** Extracting User Behavior Data for AI Model**
+```cypher
+  MATCH (u:User {user_id: $user_id})-[:HAS_INTERACTION]->(i:Interaction)
+	MATCH (u)-[:ASSOCIATED_WITH]->(p:User)
+	RETURN
+		COUNT(i) AS total_access_count,
+		SUM(CASE WHEN i.honeytoken_triggered THEN 1 ELSE 0 END) AS honeytoken_access_count,
+		COUNT(DISTINCT i.ip_address) AS shared_ip_count,
+		AVG(p.malicious_score) AS avg_associated_malicious_score
+```
+
+####Uploaded Mock data generated by OpenAi's o1 model using upload_neo4j_data.py
+Result:
+<img width="1193" alt="Screenshot 2025-01-30 at 5 55 01 PM" src="https://github.com/user-attachments/assets/defb254c-9c76-438a-a6e9-f5ee4ec7bc0f" />
+
+
+## AI Model
+- The AI model is implemented using MLPRegressor (Multi-Layer Perceptron Regressor).
+- Trained on synthetic data generated in data_generator.py.
+  
+Results:
+<img width="293" alt="Screenshot 2025-01-29 at 1 47 06 PM" src="https://github.com/user-attachments/assets/3c1b31ec-4959-46c2-bd0d-b1e2f48bdd7e" />
+
+### AI Model Features
+- total_access_count (Number of API requests made by the user)
+- honeytoken_access_count (Count of honeypot triggers)
+- shared_ip_count (Number of unique IPs shared with other users)
+- avg_associated_malicious_score(Average maliciousness score of connected users)
+
+### Endpoint used Flask
+
+Lightweight & Fast → Simple for hosting AI inference models.
+Easy Integration → Works seamlessly with Go's http.Client.
+Built-in JSON Support → Efficient handling of structured data.
+
+### Results
+<img width="902" alt="Screenshot 2025-01-30 at 5 51 31 PM" src="https://github.com/user-attachments/assets/867c7bb0-c656-47f1-af6a-59205e056d66" />
+
+
+# Example Go Backend API Calls
+<img width="898" alt="Screenshot 2025-01-30 at 6 33 05 PM" src="https://github.com/user-attachments/assets/3480d483-e0c7-46ad-8992-c62413a41279" />
+
