@@ -12,7 +12,7 @@ func main() {
 	// Initialize services
 	logger := utils.NewLogger()
 	neo4jService := services.NewNeo4jService("bolt://localhost:7687", "neo4j", "Password", logger)
-	AIIntegrationService := services.NewAIIntegrationService("http://localhost:5000", logger)
+	AIIntegrationService := services.NewAIIntegrationService("http://127.0.0.1:5000", logger)
 	userAnalysisService := services.NewUserAnalysisService(neo4jService, AIIntegrationService, logger)
 
 	// Initialize handlers
