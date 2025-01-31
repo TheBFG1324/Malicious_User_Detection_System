@@ -54,7 +54,7 @@ The system represents users and interactions using **graph nodes and relationshi
 | **ASSOCIATED_WITH** | Links two `Users` with a connection |
 
 ### **Cypher Queries**
-#### ** Inserting a User Interaction**
+#### **Inserting a User Interaction**
 ```cypher
 MERGE (u:User {user_id: $user_id})
 ON CREATE SET u.malicious_score = 0.0
