@@ -1,8 +1,7 @@
 # Malicious User Detection System
 
 ## Overview
-The **Malicious User Detection System** is a security tool designed to track user interactions, detect fake behaviors, and predict malicious users using **AI and Neo4j**.  
-This project **combines graph-based insights and machine learning** to enhance cybersecurity and proactively detect threats.
+The Malicious User Detection System (MUDS) is a cybersecurity tool that leverages AI-driven behavioral analysis and graph-based insights to identify and mitigate potential threats. By tracking user interactions within a system, MUDS detects patterns of suspicious or fake behaviors and predicts malicious users before they can cause harm. The system integrates Go, Neo4j, machine learning, and Flask APIs to deliver real-time security intelligence.
 
 ## Features
 - **Data Logging:** Tracks user activity, endpoint accesses, and honeytoken triggers.
